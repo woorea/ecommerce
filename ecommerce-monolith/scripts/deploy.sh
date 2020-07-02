@@ -6,7 +6,7 @@ COMMIT_SHA1=$CIRCLE_SHA1
 export COMMIT_SHA1=$COMMIT_SHA1
 
 envsubst <./k8s/deployment.yml >./k8s/deployment.yml.out
-mv ./k8s/deployment.yml.out ./kube/deployment.yml
+mv ./k8s/deployment.yml.out ./k8s/deployment.yml
 
 echo "$KUBERNETES_CLUSTER_CERTIFICATE" > cert.crt
 
