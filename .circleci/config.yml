@@ -65,20 +65,20 @@ jobs:
             sudo mv ./doctl /usr/local/bin/doctl
             doctl version
       - run:
-        name: Authorize doctl
-        command: doctl auth init -t $DIGITALOCEAN_CIRCLECI_TOKEN
+          name: Authorize doctl
+          command: doctl auth init -t $DIGITALOCEAN_CIRCLECI_TOKEN
       - run:
-        name: Connect to cluster
-        command: doctl kubernetes cluster kubeconfig save $KUBERNETES_CLUSTER
+          name: Connect to cluster
+          command: doctl kubernetes cluster kubeconfig save $KUBERNETES_CLUSTER
       - run:
-        name: Get pods
-        command: kubectl get pods
+          name: Get pods
+          command: kubectl get pods
       - run:
-        name: Deploy
-        command: |
-          helm uninstall ./helm
-          sleep 10
-          helm install ./helm
+          name: Deploy
+          command: |
+            helm uninstall ./helm
+            sleep 10
+            helm install ./helm
       # - run:
       #     name: Deploy Code
       #     command: ./scripts/deploy.sh
