@@ -52,9 +52,36 @@ jobs:
           command: |
             curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
             chmod u+x ./kubectl
+            sudo mv ./kubectl /usr/local/bin/kubectl
       - run:
-          name: Deploy Code
-          command: ./scripts/deploy.sh
+          name: Install helm
+          command: |
+            curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+      - run:
+          name: Install doctl
+          command: |
+            curl -sL  https://github.com/digitalocean/doctl/releases/download/v1.45.1/doctl-1.45.1-linux-amd64.tar.gz | tar -xzv
+            chmod +x ./doctl
+            sudo mv ./doctl /usr/local/bin/doctl
+            doctl version
+      - run:
+        name: Authorize doctl
+        command: doctl auth init -t $DIGITALOCEAN_CIRCLECI_TOKEN
+      - run:
+        name: Connect to cluster
+        command: doctl kubernetes cluster kubeconfig save $KUBERNETES_CLUSTER
+      - run:
+        name: Get pods
+        command: kubectl get pods
+      - run:
+        name: Deploy
+        command: |
+          helm uninstall ./helm
+          sleep 10
+          helm install ./helm
+      # - run:
+      #     name: Deploy Code
+      #     command: ./scripts/deploy.sh
 workflows:
   version: 2.1
   ecommerce-monolith:

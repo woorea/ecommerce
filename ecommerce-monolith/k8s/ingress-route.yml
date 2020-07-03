@@ -1,0 +1,14 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: ecommerce-monolith
+  namespace: default
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`monolith.billingflow.com`)
+      kind: Rule
+      services:
+        - name: ecommerce-monolith
+          port: 80
