@@ -1,7 +1,18 @@
 version: 2.1
 jobs:
-  ecommerce-monolith:
-    working_directory: ~/repository/ecommerce-monolith
+  checkout:
+    working_directory: /home/circleci/repository/ecommerce-monolith
+    docker:
+      - image: circleci/openjdk:8-jdk-stretch
+    steps:
+      - checkout:
+          path: /home/circleci/repository
+      - persist_to_workspace:
+          root: /home/circleci
+          paths:
+            - repository/ecommerce-monolith
+  build:
+    working_directory: /home/circleci/repository/ecommerce-monolith
 
     docker:
       - image: circleci/openjdk:8-jdk-stretch
@@ -10,8 +21,8 @@ jobs:
       IMAGE_NAME: woorea/ecommerce-monolith
 
     steps:
-      - checkout:
-          path: ~/repository
+      - attach_workspace:
+          at: /home/circleci
 
       - restore_cache:
           key: ecommerce-monolith-{{ checksum "pom.xml" }}
@@ -31,6 +42,23 @@ jobs:
       - store_artifacts:
           path: target/ecommerce-monolith-0.0.1-SNAPSHOT.jar
 
+      - persist_to_workspace:
+          root: /home/circleci
+          paths:
+            - repository/ecommerce-monolith/target/ecommerce-monolith-0.0.1-SNAPSHOT.jar
+
+  publish-docker-image:
+    working_directory: ~/repository/ecommerce-monolith
+
+    docker:
+      - image: circleci/openjdk:8-jdk-stretch
+
+    environment:
+      IMAGE_NAME: woorea/ecommerce-monolith
+
+    steps:
+      - attach_workspace:
+          at: /home/circleci
       - setup_remote_docker
       - run:
           name: Build Docker image
@@ -43,10 +71,18 @@ jobs:
             docker tag $IMAGE_NAME:latest $IMAGE_NAME:$CIRCLE_SHA1
             docker push $IMAGE_NAME:latest
             docker push $IMAGE_NAME:$CIRCLE_SHA1
-      - run:
-          name: Install envsubst
-          command: |
-            sudo apt-get update && sudo apt-get -y install gettext-base
+  deploy-k8s:
+    working_directory: ~/repository/ecommerce-monolith
+
+    docker:
+      - image: circleci/openjdk:8-jdk-stretch
+
+    environment:
+      IMAGE_NAME: woorea/ecommerce-monolith
+
+    steps:
+      - attach_workspace:
+          at: /home/circleci
       - run:
           name: Install kubectl
           command: |
@@ -83,4 +119,15 @@ workflows:
   version: 2.1
   ecommerce-monolith:
     jobs:
-      - ecommerce-monolith
+      - checkout
+      - build
+      - publish-docker-image:
+          filters:
+            branches:
+              only:
+                - master
+      - deploy-k8s:
+          filters:
+            branches:
+              only:
+                - master
