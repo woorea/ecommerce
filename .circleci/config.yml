@@ -63,8 +63,6 @@ jobs:
       - run:
           name: Build Docker image
           command: |
-            pwd
-            ls -R
             docker build -t $IMAGE_NAME:latest .
       - run:
           name: Push Docker Image
@@ -74,7 +72,7 @@ jobs:
             docker push $IMAGE_NAME:latest
             docker push $IMAGE_NAME:$CIRCLE_SHA1
   deploy-k8s:
-    working_directory: /home/circleci
+    working_directory: /home/circleci/repository/ecommerce-monolith
 
     docker:
       - image: circleci/openjdk:8-jdk-stretch
@@ -114,11 +112,7 @@ jobs:
       - run:
           name: Deploy
           command: |
-            set +e
-            helm uninstall ecommerce
-            set -e
-            sleep 10
-            helm install --set image.tag=$CIRCLE_SHA1 ecommerce ./helm
+            helm upgrade --install --force --set image.tag=$CIRCLE_SHA1 ecommerce ./helm
 workflows:
   version: 2.1
   ecommerce-monolith:
