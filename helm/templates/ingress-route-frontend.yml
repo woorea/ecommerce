@@ -1,0 +1,14 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: ecommerce-frontend
+  namespace: default
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`frontend.billingflow.com`)
+      kind: Rule
+      services:
+        - name: ecommerce-frontend
+          port: 80

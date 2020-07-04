@@ -1,7 +1,7 @@
 version: 2.1
 jobs:
   checkout:
-    working_directory: /home/circleci/repository/ecommerce-monolith
+    working_directory: /home/circleci/repository
     docker:
       - image: circleci/openjdk:8-jdk-stretch
     steps:
@@ -10,15 +10,12 @@ jobs:
       - persist_to_workspace:
           root: /home/circleci
           paths:
-            - repository/ecommerce-monolith
-  build:
+            - repository
+  build_monolith:
     working_directory: /home/circleci/repository/ecommerce-monolith
 
     docker:
       - image: circleci/openjdk:8-jdk-stretch
-
-    environment:
-      IMAGE_NAME: woorea/ecommerce-monolith
 
     steps:
       - attach_workspace:
@@ -47,7 +44,31 @@ jobs:
           paths:
             - repository/ecommerce-monolith
 
-  publish-docker-image:
+  publish_docker_image_frontend:
+    working_directory: /home/circleci/repository/ecommerce-frontend
+
+    docker:
+      - image: circleci/openjdk:8-jdk-stretch
+
+    environment:
+      IMAGE_NAME: woorea/ecommerce-frontend
+
+    steps:
+      - attach_workspace:
+          at: /home/circleci
+      - setup_remote_docker
+      - run:
+          name: Build Docker image
+          command: |
+            docker build -t $IMAGE_NAME:latest .
+      - run:
+          name: Push Docker Image
+          command: |
+            echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+            docker tag $IMAGE_NAME:latest $IMAGE_NAME:$CIRCLE_SHA1
+            docker push $IMAGE_NAME:latest
+            docker push $IMAGE_NAME:$CIRCLE_SHA1
+  publish_docker_image_monolith:
     working_directory: /home/circleci/repository/ecommerce-monolith
 
     docker:
@@ -71,7 +92,7 @@ jobs:
             docker tag $IMAGE_NAME:latest $IMAGE_NAME:$CIRCLE_SHA1
             docker push $IMAGE_NAME:latest
             docker push $IMAGE_NAME:$CIRCLE_SHA1
-  deploy-k8s:
+  deploy_k8s:
     working_directory: /home/circleci/repository/ecommerce-monolith
 
     docker:
@@ -115,22 +136,33 @@ jobs:
             helm upgrade --install --force --set image.tag=$CIRCLE_SHA1 ecommerce ./helm
 workflows:
   version: 2.1
-  ecommerce-monolith:
+  ecommerce:
     jobs:
       - checkout
-      - build:
+      - build_frontend:
           requires:
             - checkout
-      - publish-docker-image:
+      - build_monolith:
           requires:
-            - build
+            - checkout
+      - publish_docker_image_frontend:
+          requires:
+            - checkout
           filters:
             branches:
               only:
                 - master
-      - deploy-k8s:
+      - publish_docker_image_monolith:
           requires:
-            - publish-docker-image
+            - build_monolith
+          filters:
+            branches:
+              only:
+                - master
+      - deploy_k8s:
+          requires:
+            - publish_docker_image_frontend
+            - publish_docker_image_monolith
           filters:
             branches:
               only:
