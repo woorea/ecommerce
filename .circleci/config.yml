@@ -43,12 +43,13 @@ jobs:
           path: target/ecommerce-monolith-0.0.1-SNAPSHOT.jar
 
       - persist_to_workspace:
-          root: /home/circleci
+          root: /home/circleci/repository/ecommerce-monolith
           paths:
-            - repository/ecommerce-monolith
+            - Dockerfile
+            - target/ecommerce-monolith-0.0.1-SNAPSHOT.jar
 
   publish-docker-image:
-    working_directory: ~/repository/ecommerce-monolith
+    working_directory: /home/circleci
 
     docker:
       - image: circleci/openjdk:8-jdk-stretch
@@ -72,7 +73,7 @@ jobs:
             docker push $IMAGE_NAME:latest
             docker push $IMAGE_NAME:$CIRCLE_SHA1
   deploy-k8s:
-    working_directory: ~/repository/ecommerce-monolith
+    working_directory: /home/circleci
 
     docker:
       - image: circleci/openjdk:8-jdk-stretch
@@ -112,7 +113,9 @@ jobs:
       - run:
           name: Deploy
           command: |
+            set +e
             helm uninstall ecommerce
+            set -e
             sleep 10
             helm install --set image.tag=$CIRCLE_SHA1 ecommerce ./helm
 workflows:
@@ -120,13 +123,19 @@ workflows:
   ecommerce-monolith:
     jobs:
       - checkout
-      - build
+      - build:
+          requires:
+            - checkout
       - publish-docker-image:
+          requires:
+            - build
           filters:
             branches:
               only:
                 - master
       - deploy-k8s:
+          requires:
+            - publish-docker-image
           filters:
             branches:
               only:
