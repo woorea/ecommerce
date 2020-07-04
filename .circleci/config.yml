@@ -93,13 +93,10 @@ jobs:
             docker push $IMAGE_NAME:latest
             docker push $IMAGE_NAME:$CIRCLE_SHA1
   deploy_k8s:
-    working_directory: /home/circleci/repository/ecommerce-monolith
+    working_directory: /home/circleci/repository
 
     docker:
       - image: circleci/openjdk:8-jdk-stretch
-
-    environment:
-      IMAGE_NAME: woorea/ecommerce-monolith
 
     steps:
       - attach_workspace:
@@ -139,9 +136,6 @@ workflows:
   ecommerce:
     jobs:
       - checkout
-      - build_frontend:
-          requires:
-            - checkout
       - build_monolith:
           requires:
             - checkout
