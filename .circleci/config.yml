@@ -76,12 +76,9 @@ jobs:
       - run:
           name: Deploy
           command: |
-            helm uninstall ./helm
+            helm uninstall ecommerce
             sleep 10
-            helm install ./helm
-      # - run:
-      #     name: Deploy Code
-      #     command: ./scripts/deploy.sh
+            helm install --set image.tag=$CIRCLE_SHA1 ecommerce ./helm
 workflows:
   version: 2.1
   ecommerce-monolith:
