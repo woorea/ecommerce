@@ -3,14 +3,8 @@ name: default
 
 steps:
 - name: test
-  image: docker:dind
-  volumes:
-  - name: dockersock
-    path: /var/run/docker.sock
+  image: maven:3-jdk-10
   commands:
-  - docker ps -a
-
-volumes:
-- name: dockersock
-  host:
-    path: /var/run/docker.sock
+  - pws
+  - ls -la
+  
